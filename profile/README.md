@@ -1,8 +1,13 @@
 # Bioconductor Package Rescue
 
 This is an effort to autofix or "rescue" Bioconductor packages that are failing
-build/check/test on the Bioconductor build system. It is started with those
-slated for deprecation.
+build/check/test on the Bioconductor build system and are marked for deprecation.
+
+---
+
+## Check the Status
+
+You can see the live status of all rescued packages, their current Bioconductor build status, download stats, and rescue branch/workflow status on our centralized **[Rescue Dashboard](https://github.com/bioc-package-rescue/bioc-rescue-dashboard)**. Packages with high download stats should be prioritized.
 
 ---
 
@@ -23,8 +28,3 @@ If you are the developer or maintainer:
 * **No Intrusive Changes**: We do not have write access to your original repository. All of our fixes are developed and verified entirely within our forks here.
 * **Easy Upstream Integration**: Once we get a package's GHA checks to go fully green and a human has reviewed the PR, we will a) submit a PR to your upstream repo if it is on GitHub, or b) allow you to review the PR in this rescue repo before you push the changes to git.bioconductor.org.
 
----
-
-## Check the Status
-
-You can see the live status of all rescued packages, their current Bioconductor build status, download stats, and rescue branch/workflow status on our centralized **[Rescue Dashboard](https://github.com/bioc-package-rescue/bioc-rescue-dashboard)**.
