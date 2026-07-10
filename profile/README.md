@@ -15,9 +15,9 @@ You can see the live status of all rescued packages, their current Bioconductor 
 
 1. **Monitoring**: Currently has all packages listed on the Bioconductor Help Wanted page. Could be extended to monitor daily build status DBs.
 2. **Rescue Forks**: For packages that are failing checks or flagged for deprecation, we fork (if maintained on GitHub) or clone (if only on git.bioconductor.org) into the `bioc-package-rescue` organization.
-3. **GHA Testing**: We configure each fork to run a centralized GitHub Actions workflow (`bioc-package-rescue/workflows`) that automatically tests the package against the **Bioconductor Release** and **Bioconductor Devel** docker images. To save time/cost, we only test the default branch and only on Linux, which should be adequate to fix most of the types of issues that threaten deprecation.
-4. **Agentic Auto-Fixes**: A locally-running AI coding agents read GHA check logs, diagnoses the issues, and apply fixes as a PR.
-5. **Verification**: The agent waits for the GHA and the GitHub Copilot PR code review, and updates the PR based on information from both. This process iterates until there are no ERRORs or WARNINGs in the GHA build/check, at which point the PR is marked ready for human review.
+3. **GHA Testing**: We configure each fork to run a [centralized GitHub Actions workflow](https://github.com/bioc-package-rescue/workflows/blob/main/.github/workflows/check-bioc.yml) that builds/checks/tests against the **Bioconductor Devel** docker image. To save time/cost, we only test the default branch and only on Linux, which should be adequate to fix most of the types of issues that threaten deprecation.
+4. **Agentic Auto-Fixes**: A locally-running AI coding agents read GHA check logs, diagnoses the ERRORs, and applies fixes as a PR. WARNINGs and NOTEs are ignored.
+5. **Verification**: The agent waits for the GHA and the GitHub Copilot PR code review, and updates the PR based on information from both. This process iterates until there are no ERRORs in the GHA build/check, at which point the PR is marked ready for human review.
 
 ---
 
