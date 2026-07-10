@@ -1,40 +1,30 @@
 # Bioconductor Package Rescue
 
-Welcome to the **Bioconductor Package Rescue** organization! 🧬🚀
-
-This organization is a cooperative initiative dedicated to keeping valuable Bioconductor packages alive, healthy, and building successfully on the latest R and Bioconductor releases.
-
----
-
-## 🔍 What is this organization for?
-
-When a Bioconductor package starts failing its daily builds (resulting in `ERROR` or `TIMEOUT` status) or is scheduled for deprecation, it risks being removed from the next Bioconductor release. 
-
-Our mission is to **rescue** these packages by automatically identifying, diagnosing, and fixing build and check issues. We do this by combining **automated AI coding agents** (like Google Antigravity) with a centralized **GitHub Actions (GHA) testing infrastructure**.
+This is an effort to autofix or "rescue" Bioconductor packages that are failing
+build/check/test on the Bioconductor build system. It is started with those
+slated for deprecation.
 
 ---
 
-## ⚙️ How it works
+## How it works
 
-1. **Active Monitoring**: We track the official Bioconductor Help Wanted page and daily build status DBs.
-2. **Rescue Forks**: For packages that are failing checks or flagged for deprecation, we fork or clone them here into the `bioc-package-rescue` organization.
-3. **Centralized Testing**: We configure each fork to run a centralized GitHub Actions workflow (`bioc-package-rescue/workflows`) that automatically tests the package against both the **Bioconductor Release** and **Bioconductor Devel** docker images.
-4. **Agentic Auto-Fixes**: We deploy AI coding agents to read GHA check logs, diagnose the issues (e.g., deprecated R/package APIs, broken documentation syntax, or missing dependencies), and apply fixes on separate branches.
-5. **PR and Verification**: Fixes are submitted as Pull Requests on our forks and tested. Once the check suite goes completely green, the PR is marked ready for review.
+1. **Monitoring**: Currently has all packages listed on the Bioconductor Help Wanted page. Could be extended to monitor daily build status DBs.
+2. **Rescue Forks**: For packages that are failing checks or flagged for deprecation, we fork (if maintained on GitHub) or clone (if only on git.bioconductor.org) into the `bioc-package-rescue` organization.
+3. **GHA Testing**: We configure each fork to run a centralized GitHub Actions workflow (`bioc-package-rescue/workflows`) that automatically tests the package against the **Bioconductor Release** and **Bioconductor Devel** docker images. To save time/cost, we only test the default branch and only on Linux, which should be adequate to fix most of the types of issues that threaten deprecation.
+4. **Agentic Auto-Fixes**: A locally-running AI coding agents read GHA check logs, diagnoses the issues, and apply fixes as a PR.
+5. **Verification**: The agent waits for the GHA and the GitHub Copilot PR code review, and updates the PR based on information from both. This process iterates until there are no ERRORs or WARNINGs in the GHA build/check, at which point the PR is marked ready for human review.
 
 ---
 
-## 🙋‍♂️ Information for Package Maintainers
+## Information for Package Maintainers
 
-If you are the developer or maintainer of a package listed in this organization:
+If you are the developer or maintainer:
 
 * **No Intrusive Changes**: We do not have write access to your original repository. All of our fixes are developed and verified entirely within our forks here.
-* **Easy Upstream Integration**: Once we get a package's GHA checks to go fully green, you can review our pull requests and merge the fixes back into your original upstream repository at your convenience.
-* **We Welcome Collaboration**: You are welcome to join us, review the proposed PRs, submit issues, or take over maintenance of your rescued fork!
-* **Opt-Out**: If you do not want your package's fork hosted here, please open an issue in our [bioc-rescue-dashboard](https://github.com/bioc-package-rescue/bioc-rescue-dashboard) repository and we will remove it immediately.
+* **Easy Upstream Integration**: Once we get a package's GHA checks to go fully green and a human has reviewed the PR, we will a) submit a PR to your upstream repo if it is on GitHub, or b) allow you to review the PR in this rescue repo before you push the changes to git.bioconductor.org.
 
 ---
 
-## 📈 Check the Status
+## Check the Status
 
 You can see the live status of all rescued packages, their current Bioconductor build status, download stats, and rescue branch/workflow status on our centralized **[Rescue Dashboard](https://github.com/bioc-package-rescue/bioc-rescue-dashboard)**.
