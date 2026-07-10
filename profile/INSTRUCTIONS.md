@@ -204,13 +204,38 @@ to the branch until the PR is approved and merged.
    the latest GHA result and record the error class and severity.
 2. **Fix & iterate** — work through the queue one package at a time using the loop
    above.
-3. **Upstream PR Submission** — once the rescue PR is verified green, you can
-   automatically open a clean Pull Request back to the original upstream parent
-   repository (with `.github/workflows/check-bioc.yml` automatically excluded
-   from the PR) by running from the `bioc-rescue-dashboard` directory:
+3. **Upstream PR Submission** — once the rescue PR is verified green, you must open a pull request back to the original upstream parent repository *without* including `.github/workflows/check-bioc.yml` or other rescue-specific files in the diff.
+
+   #### Option A: Automated (Recommended)
+   Run the submission script from the `bioc-rescue-dashboard` directory:
    ```bash
    cd bioc-rescue-dashboard
    python scripts/submit_upstream.py <package_name> <fix_branch_name>
+   ```
+   This script automatically:
+   - Fetches the upstream repository default branch (e.g. `upstream/master`).
+   - Creates a temporary local submission branch based off upstream.
+   - Extracts only the modified code files, **ignoring anything in the `.github/` folder**, `.gitignore`, or `.gitattributes`.
+   - Commits, pushes the branch to your fork, and uses `gh pr create` to target the upstream parent repository.
+
+   #### Option B: Manual Steps
+   If you need to submit the PR manually:
+   ```bash
+   # 1. Fetch upstream
+   git remote add upstream <upstream_repo_url>
+   git fetch upstream
+
+   # 2. Create a clean branch off upstream's default branch
+   git checkout -b submit-upstream-branch upstream/master
+
+   # 3. Pull only the package code files from your fix branch (exclude .github/)
+   git checkout fix-branch -- DESCRIPTION R/ inst/ man/ src/
+
+   # 4. Commit and push the submission branch
+   git commit -m "Fix R CMD check errors"
+   git push origin submit-upstream-branch
+
+   # 5. Open the PR targeting upstream's default branch on GitHub
    ```
 4. **Dashboard** — after a batch of PRs is merged, regenerate the README:
    ```bash
