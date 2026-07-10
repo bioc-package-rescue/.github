@@ -6,7 +6,7 @@ This document describes how to maintain the `bioc-rescue-dashboard`, manage resc
 
 ## Package List: `packages.csv`
 
-**`packages.csv`** (in the root of this repo) is the single source of truth for all tracked packages. Every script reads from it — nothing is hard-coded in the scripts themselves.
+**`packages.csv`** (in the root of the `bioc-rescue-dashboard` repository) is the single source of truth for all tracked packages. Every script reads from it — nothing is hard-coded in the scripts themselves.
 
 ### Format
 
@@ -25,16 +25,16 @@ myCustomPkg,Software,manual
 
 ### Adding a Package Manually
 
-Edit `packages.csv` directly, add a row with `source=manual`, and commit. The next dashboard run will pick it up automatically.
+Edit `packages.csv` directly in the `bioc-rescue-dashboard` repository, add a row with `source=manual`, and commit. The next dashboard run will pick it up automatically.
 
 ---
 
 ## Configuration
 
-Two scripts hard-code the local workspace root path. If running on a different machine, update `WORKSPACE_ROOT` near the top of:
+Two scripts hard-code the local workspace root path. If running on a different machine, update `WORKSPACE_ROOT` near the top of these files (located in the `bioc-rescue-dashboard` repository):
 
-- `scripts/clone_repos.py`
-- `scripts/update_reusable_workflows.py`
+- `bioc-rescue-dashboard/scripts/clone_repos.py`
+- `bioc-rescue-dashboard/scripts/update_reusable_workflows.py`
 
 Default: `/Users/Levi/git/bioc-package-rescue`
 
@@ -42,9 +42,11 @@ Default: `/Users/Levi/git/bioc-package-rescue`
 
 ## Typical Workflow
 
-Run in order when setting up fresh or after Bioconductor publishes updates:
+Commands must be run from the `bioc-rescue-dashboard` directory. Run in order when setting up fresh or after Bioconductor publishes updates:
 
 ```bash
+cd bioc-rescue-dashboard
+
 # 1. Sync package list from Bioconductor Help Wanted page → packages.csv
 python scripts/sync_packages.py
 git add packages.csv && git commit -m "Sync packages.csv"
@@ -69,13 +71,15 @@ Steps 2–5 are idempotent — already-existing repos, clones, and workflows are
 
 ## Script Reference
 
-### `sync_packages.py` — Update the package list
+All script paths below are relative to the `bioc-rescue-dashboard` repository.
+
+### `scripts/sync_packages.py` — Update the package list
 
 Fetches the Bioconductor [Help Wanted page](https://bioconductor.org/developers/help_wanted/) and merges it into `packages.csv`:
 - New packages from the **Deprecated** and **Voluntarily Listed** sections are added.
 - Existing rows (including `source=manual` entries) are **never removed or overwritten**.
 
-### `rescue_repos.py` — Create GitHub repos
+### `scripts/rescue_repos.py` — Create GitHub repos
 
 For each package in `packages.csv` with build status `ERROR` or `TIMEOUT`, creates a public repository in the `bioc-package-rescue` organization:
 - If the package has an upstream **GitHub repository**, it is **forked**.
@@ -84,15 +88,15 @@ For each package in `packages.csv` with build status `ERROR` or `TIMEOUT`, creat
 
 Requires the `gh` CLI authenticated to an account with organization-level repository creation permissions.
 
-### `clone_repos.py` — Clone repos locally
+### `scripts/clone_repos.py` — Clone repos locally
 
 Clones each rescue repo (ERROR/TIMEOUT packages only) from `git@github.com:bioc-package-rescue/<pkg>` into the local workspace. Already-existing local directories are skipped.
 
-### `update_reusable_workflows.py` — Push GHA workflow stubs
+### `scripts/update_reusable_workflows.py` — Push GHA workflow stubs
 
 Writes the minimal caller stub (see below) to `.github/workflows/check-bioc.yml` in every local checkout with ERROR/TIMEOUT status, commits with `Antigravity <gemini@google.com>` as author, and pushes. Already-up-to-date repos are skipped.
 
-### `update_deprecated_packages.py` — Regenerate dashboard README
+### `scripts/update_deprecated_packages.py` — Regenerate dashboard README
 
 Reads `packages.csv`, fetches the current Bioconductor build status and most recent complete-year download statistics, and rewrites `README.md` with two tables: **Deprecated Packages** and **Voluntarily Listed / Manual packages**.
 
@@ -203,12 +207,14 @@ to the branch until the PR is approved and merged.
 3. **Upstream PR Submission** — once the rescue PR is verified green, you can
    automatically open a clean Pull Request back to the original upstream parent
    repository (with `.github/workflows/check-bioc.yml` automatically excluded
-   from the PR) by running:
+   from the PR) by running from the `bioc-rescue-dashboard` directory:
    ```bash
+   cd bioc-rescue-dashboard
    python scripts/submit_upstream.py <package_name> <fix_branch_name>
    ```
 4. **Dashboard** — after a batch of PRs is merged, regenerate the README:
    ```bash
+   cd bioc-rescue-dashboard
    python scripts/update_deprecated_packages.py
    git add README.md && git commit -m "Update dashboard"
    git push origin main
