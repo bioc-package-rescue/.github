@@ -9,7 +9,11 @@ build/check/test on the Bioconductor build system and are marked for deprecation
 
 You can see the live status of all rescued packages, their current Bioconductor build status, download stats, and rescue branch/workflow status on our centralized **[Rescue Dashboard](https://github.com/bioc-package-rescue/bioc-rescue-dashboard)**. Packages with high download stats should be prioritized.
 
-For a technical overview and statistics of the programmatic and metadata fixes we have applied across all rescued packages, see the **[Rescue Fixes Summary](https://github.com/bioc-package-rescue/bioc-rescue-dashboard/blob/main/rescue_fixes_summary.md)**.
+Detailed reports and metrics are available in the dashboard repository:
+* **[Dashboard Home (README.md)](https://github.com/bioc-package-rescue/bioc-rescue-dashboard)** - Centralized view of all packages, build status, and download stats.
+* **[Rescue Fixes Summary (rescue_fixes_summary.md)](https://github.com/bioc-package-rescue/bioc-rescue-dashboard/blob/main/rescue_fixes_summary.md)** - Technical overview and statistics of the categories of programmatic and metadata fixes applied.
+* **[Detailed Package Fixes (package_fix_details.md)](https://github.com/bioc-package-rescue/bioc-rescue-dashboard/blob/main/package_fix_details.md)** - Full description of applied fixes, substantive commits, and comprehensive diffs for all 37 packages.
+* **[Package Fix Stats (package_fix_stats.csv)](https://github.com/bioc-package-rescue/bioc-rescue-dashboard/blob/main/package_fix_stats.csv)** - A machine-readable breakdown of the number of files changed, additions, and deletions per package.
 
 ---
 
