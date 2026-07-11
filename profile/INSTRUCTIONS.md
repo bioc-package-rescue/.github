@@ -94,7 +94,7 @@ Clones each rescue repo (ERROR/TIMEOUT packages only) from `git@github.com:bioc-
 
 ### `scripts/update_reusable_workflows.py` — Push GHA workflow stubs
 
-Writes the minimal caller stub (see below) to `.github/workflows/check-bioc.yml` in every local checkout with ERROR/TIMEOUT status, commits with `Antigravity <gemini@google.com>` as author, and pushes. Already-up-to-date repos are skipped.
+Writes the minimal caller stub (see below) to `.github/workflows/check-bioc.yml` in every local checkout with ERROR/TIMEOUT status, commits with `Antigravity <gemini@google.com>` as author, and pushes. Already-up-to-date repos are skipped. The commit author is hardcoded; update the script if using a different agent.
 
 ### `scripts/update_deprecated_packages.py` — Regenerate dashboard README
 
@@ -151,14 +151,21 @@ informational and can be ignored.
 - **Always open a PR** — never push fixes directly to the default branch. PRs allow GitHub Copilot review before merging.
 - **Rescue fork only** — fixes stay in the `bioc-package-rescue` fork. Upstream PRs
   to the original maintainer's repo are out of scope and are done manually.
+- **Never silence errors by removing or disabling tests** — this includes deleting
+  test files, commenting out test blocks, wrapping them in `if (FALSE) {...}`, or
+  using `\dontrun{}` in examples. Fix the underlying problem instead. The only
+  exceptions are code genuinely not intended to be tested: pseudocode used for
+  illustration, or code that cannot run in CI/CD (e.g., requires live credentials,
+  proprietary hardware, or interactive user input). In those cases, `\dontrun{}`
+  is appropriate and must include a comment explaining why.
 - **GHA is the authority** — the local machine (aarch64 macOS) may differ from the
   GHA environment (x86_64 Ubuntu inside Bioconductor Docker). Always confirm fixes
   via the GHA run, not just local `Rscript` output.
-- **Include the co-author trailer** in every commit:
+- **Include the co-author trailer** in every commit — use the trailer for the agent making the changes (substitute accordingly for other agents):
   ```
   Co-authored-by: Antigravity <gemini@google.com>
   ```
-- **Handling non-standard files** — If you identify non-standard files or directories in the package repository (e.g. log files, temporary build artifacts, or other files that do not belong in a standard R package) that were committed by the original maintainers, do not delete them. Instead, add them to the package's `.Rbuildignore` file to ensure they are excluded from the package build process.
+- **Handling non-standard files** — If you find non-standard files committed by the original maintainers (e.g., log files, build artifacts), do not delete them — add them to `.Rbuildignore` instead.
 - **Avoiding line-ending problems (CRLF vs LF)** — Some upstream repositories (especially those originally maintained on Windows) contain files with Windows-style CRLF (`\r\n`) line endings. To prevent massive, misleading git diffs that inflate insertion/deletion statistics and obscure substantive changes:
   1. Always check if the original package files use CRLF line endings.
   2. If they do, configure Git locally within that repository to disable automatic line-ending conversion before making or staging edits:
@@ -166,8 +173,6 @@ informational and can be ignored.
      git config core.autocrlf false
      ```
   3. Ensure that your text editor or IDE saves edits using the repository's original line endings (CRLF or LF), or use a utility/script to restore CRLF to any modified files before staging and committing.
-
-
 
 ### Single-Package Fix Loop
 
@@ -210,6 +215,9 @@ to the branch until the PR is approved and merged.
 | Missing `\\link` package anchor | WARNING | `\\link{Foo}` without package qualifier | Change to `\\link[pkg]{Foo}` in Rd |
 | Lost braces in Rd | WARNING | `\\itemize` where `\\describe` is required | Fix Rd markup |
 | `\\usage` / signature mismatch | WARNING | Function arguments changed since Rd was written | Update Rd or re-roxygenize |
+| BiocCheck: missing/invalid `biocViews` | ERROR | `biocViews` absent or not from the controlled vocabulary | Add valid terms to `DESCRIPTION` |
+| BiocCheck: `T`/`F` shorthand | WARNING | `if (T)` instead of `if (TRUE)` | Replace with `TRUE`/`FALSE` throughout |
+| BiocCheck: `require()` in function body | WARNING | `require(pkg)` inside a function | Use `pkg::fun()` or move to `Imports` |
 
 ### Iterating Over All Packages
 
@@ -219,26 +227,27 @@ to the branch until the PR is approved and merged.
    above.
 3. **Upstream PR Submission** — once the rescue PR is verified green, you must open a pull request back to the original upstream parent repository *without* including `.github/workflows/check-bioc.yml` or other rescue-specific files in the diff.
 
-# Automated upstream PR submission has been disabled.
-# Please follow the manual steps (Option B) to submit PRs to upstream.
+> [!WARNING]
+> Automated upstream PR submission has been disabled. Follow the manual steps below to submit PRs to upstream.
 
 
-   #### Option B: Manual Steps
-   If you need to submit the PR manually:
+   #### Manual Steps
    ```bash
    # 1. Fetch upstream
    git remote add upstream <upstream_repo_url>
    git fetch upstream
 
    # 2. Create a clean branch off upstream's default branch
-   git checkout -b submit-upstream-branch upstream/master
+   git checkout -b upstream-fix/<pkg> upstream/<default-branch>
 
    # 3. Pull only the package code files from your fix branch (exclude .github/)
-   git checkout fix-branch -- DESCRIPTION R/ inst/ man/ src/
+   git checkout fix/<short-description> -- DESCRIPTION R/ inst/ man/ src/
 
    # 4. Commit and push the submission branch
-   git commit -m "Fix R CMD check errors"
-   git push origin submit-upstream-branch
+   git commit -m "Fix R CMD check errors
+
+Co-authored-by: Antigravity <gemini@google.com>"
+   git push origin upstream-fix/<pkg>
 
    # 5. Open the PR targeting upstream's default branch on GitHub
    ```
