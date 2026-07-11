@@ -158,7 +158,7 @@ informational and can be ignored.
   illustration, or code that cannot run in CI/CD (e.g., requires live credentials,
   proprietary hardware, or interactive user input). In those cases, `\dontrun{}`
   is appropriate and must include a comment explaining why.
-- **GHA is the authority** — the local machine (aarch64 macOS) may differ from the
+- **GHA is the authority** — the local machine may differ from the
   GHA environment (x86_64 Ubuntu inside Bioconductor Docker). Always confirm fixes
   via the GHA run, not just local `Rscript` output.
 - **Include the co-author trailer** in every commit — use the trailer for the agent making the changes (substitute accordingly for other agents):
@@ -251,10 +251,19 @@ Co-authored-by: Antigravity <gemini@google.com>"
 
    # 5. Open the PR targeting upstream's default branch on GitHub
    ```
-4. **Dashboard** — after a batch of PRs is merged, regenerate the README:
+4. **Dashboard** — after a batch of PRs is merged, regenerate the README and package fix reports:
    ```bash
    cd bioc-rescue-dashboard
+
+   # Regenerate the main landing page table
    python scripts/update_deprecated_packages.py
-   git add README.md && git commit -m "Update dashboard"
+
+   # Regenerate the substantive commits, diffs, and lines-changed statistics reports
+   python scripts/generate_report.py
+
+   git add README.md package_fix_details.md package_fix_stats.csv
+   git commit -m "Update dashboard and package fix reports
+
+Co-authored-by: Antigravity <gemini@google.com>"
    git push origin main
    ```
