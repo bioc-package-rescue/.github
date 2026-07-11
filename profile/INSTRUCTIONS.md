@@ -133,6 +133,9 @@ jobs:
 
 Run `update_reusable_workflows.py` to batch-apply or refresh this stub across all local checkouts.
 
+> [!IMPORTANT]
+> If the upstream repository already has existing GitHub Actions workflow files under `.github/workflows/`, they must be removed or replaced entirely with our centralized rescue workflow stub (`check-bioc.yml`) to prevent duplicate or incompatible runs. However, just as with other rescue-specific files, these workflow changes must never be included in the upstream PRs targeting the original package repository.
+
 ---
 
 ## Fixing Packages ("Go Until Green")
