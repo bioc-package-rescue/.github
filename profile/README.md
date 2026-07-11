@@ -9,6 +9,8 @@ build/check/test on the Bioconductor build system and are marked for deprecation
 
 You can see the live status of all rescued packages, their current Bioconductor build status, download stats, and rescue branch/workflow status on our centralized **[Rescue Dashboard](https://github.com/bioc-package-rescue/bioc-rescue-dashboard)**. Packages with high download stats should be prioritized.
 
+For a technical overview and statistics of the programmatic and metadata fixes we have applied across all rescued packages, see the **[Rescue Fixes Summary](https://github.com/bioc-package-rescue/bioc-rescue-dashboard/blob/main/rescue_fixes_summary.md)**.
+
 ---
 
 ## How it works

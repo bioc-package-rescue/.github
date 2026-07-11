@@ -206,17 +206,9 @@ to the branch until the PR is approved and merged.
    above.
 3. **Upstream PR Submission** — once the rescue PR is verified green, you must open a pull request back to the original upstream parent repository *without* including `.github/workflows/check-bioc.yml` or other rescue-specific files in the diff.
 
-   #### Option A: Automated (Recommended)
-   Run the submission script from the `bioc-rescue-dashboard` directory:
-   ```bash
-   cd bioc-rescue-dashboard
-   python scripts/submit_upstream.py <package_name> <fix_branch_name>
-   ```
-   This script automatically:
-   - Fetches the upstream repository default branch (e.g. `upstream/master`).
-   - Creates a temporary local submission branch based off upstream.
-   - Extracts only the modified code files, **ignoring anything in the `.github/` folder**, `.gitignore`, or `.gitattributes`.
-   - Commits, pushes the branch to your fork, and uses `gh pr create` to target the upstream parent repository.
+# Automated upstream PR submission has been disabled.
+# Please follow the manual steps (Option B) to submit PRs to upstream.
+
 
    #### Option B: Manual Steps
    If you need to submit the PR manually:
