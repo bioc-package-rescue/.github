@@ -156,6 +156,14 @@ informational and can be ignored.
   Co-authored-by: Antigravity <gemini@google.com>
   ```
 - **Handling non-standard files** — If you identify non-standard files or directories in the package repository (e.g. log files, temporary build artifacts, or other files that do not belong in a standard R package) that were committed by the original maintainers, do not delete them. Instead, add them to the package's `.Rbuildignore` file to ensure they are excluded from the package build process.
+- **Avoiding line-ending problems (CRLF vs LF)** — Some upstream repositories (especially those originally maintained on Windows) contain files with Windows-style CRLF (`\r\n`) line endings. To prevent massive, misleading git diffs that inflate insertion/deletion statistics and obscure substantive changes:
+  1. Always check if the original package files use CRLF line endings.
+  2. If they do, configure Git locally within that repository to disable automatic line-ending conversion before making or staging edits:
+     ```bash
+     git config core.autocrlf false
+     ```
+  3. Ensure that your text editor or IDE saves edits using the repository's original line endings (CRLF or LF), or use a utility/script to restore CRLF to any modified files before staging and committing.
+
 
 
 ### Single-Package Fix Loop
