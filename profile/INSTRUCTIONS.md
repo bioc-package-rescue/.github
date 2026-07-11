@@ -173,6 +173,8 @@ informational and can be ignored.
      git config core.autocrlf false
      ```
   3. Ensure that your text editor or IDE saves edits using the repository's original line endings (CRLF or LF), or use a utility/script to restore CRLF to any modified files before staging and committing.
+- **Never revert deprecation version bumps** — Bioconductor core signals deprecation by setting the version to a `.99` suffix (e.g., `1.4.99`). Do not revert this to a lower version (e.g., `1.4.1`) or bump to a new release track (e.g., `1.5.0`) to bypass the build system block.
+- **Never remove deprecation hooks** — If the package has `.Deprecated()` calls or load-time warnings in `.onAttach`/`.onLoad` (typically in `R/zzz.R`), do not delete or silence them.
 
 ### Single-Package Fix Loop
 
