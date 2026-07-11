@@ -155,6 +155,8 @@ informational and can be ignored.
   ```
   Co-authored-by: Antigravity <gemini@google.com>
   ```
+- **Handling non-standard files** — If you identify non-standard files or directories in the package repository (e.g. log files, temporary build artifacts, or other files that do not belong in a standard R package) that were committed by the original maintainers, do not delete them. Instead, add them to the package's `.Rbuildignore` file to ensure they are excluded from the package build process.
+
 
 ### Single-Package Fix Loop
 
