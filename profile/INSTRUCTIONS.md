@@ -100,6 +100,22 @@ Writes the minimal caller stub (see below) to `.github/workflows/check-bioc.yml`
 
 Reads `packages.csv`, fetches the current Bioconductor build status and most recent complete-year download statistics, and rewrites `README.md` with two tables: **Deprecated Packages** and **Voluntarily Listed / Manual packages**.
 
+### `scripts/submit_upstream.py` — Submit PRs to upstream parents
+
+Automates creating a Pull Request back to the original upstream repository.
+Usage: `python scripts/submit_upstream.py <package_name> <fix_branch_name>`
+- Resolves the upstream parent of the rescue fork.
+- Adds the upstream remote and fetches the default branch.
+- Creates a clean integration branch excluding rescue-specific configurations (like `.github/workflows/check-bioc.yml` or `.Rbuildignore` additions unless substantive).
+- Pushes the branch and opens a GitHub Pull Request to the original maintainers.
+
+### `scripts/generate_report.py` — Generate fix statistics
+
+Generates comprehensive reports of the fixes applied during the rescue process.
+- Parses git histories across all rescued packages to identify commits authored by the rescue agents.
+- Aggregates insertion/deletion line counts and links to actual commits/PRs.
+- Outputs `package_fix_details.md` and `package_fix_stats.csv` into the `bioc-rescue-dashboard` root.
+
 ---
 
 ## Centralized GHA Workflow
@@ -179,7 +195,7 @@ informational and can be ignored.
 
 ```
 1. Fetch latest GHA logs
-   env GITHUB_TOKEN="" gh run list --repo bioc-package-rescue/<PKG>
+   env GITHUB_TOKEN="" gh run list --workflow=check-bioc.yml --repo bioc-package-rescue/<PKG>
    env GITHUB_TOKEN="" gh run view <RUN_ID> --repo bioc-package-rescue/<PKG> --log-failed
 
 2. Parse all ERRORs; ignore WARNINGs and NOTEs
@@ -193,7 +209,7 @@ informational and can be ignored.
    git -C <PKG> push origin fix/<short-description>
 
 6. Wait for GHA to complete, then check the result
-   env GITHUB_TOKEN="" gh run list --repo bioc-package-rescue/<PKG>
+   env GITHUB_TOKEN="" gh run list --workflow=check-bioc.yml --repo bioc-package-rescue/<PKG>
 
 7a. No ERRORs → open a PR
     env GITHUB_TOKEN="" gh pr create --repo bioc-package-rescue/<PKG> \
@@ -228,30 +244,12 @@ to the branch until the PR is approved and merged.
    above.
 3. **Upstream PR Submission** — once the rescue PR is verified green, you must open a pull request back to the original upstream parent repository *without* including `.github/workflows/check-bioc.yml` or other rescue-specific files in the diff.
 
-> [!WARNING]
-> Automated upstream PR submission has been disabled. Follow the manual steps below to submit PRs to upstream.
-
-
-   #### Manual Steps
+   You can automate this by running the submit script from the dashboard repository:
    ```bash
-   # 1. Fetch upstream
-   git remote add upstream <upstream_repo_url>
-   git fetch upstream
-
-   # 2. Create a clean branch off upstream's default branch
-   git checkout -b upstream-fix/<pkg> upstream/<default-branch>
-
-   # 3. Pull only the package code files from your fix branch (exclude .github/)
-   git checkout fix/<short-description> -- DESCRIPTION R/ inst/ man/ src/
-
-   # 4. Commit and push the submission branch
-   git commit -m "Fix R CMD check errors
-
-Co-authored-by: Antigravity <gemini@google.com>"
-   git push origin upstream-fix/<pkg>
-
-   # 5. Open the PR targeting upstream's default branch on GitHub
+   python scripts/submit_upstream.py <package_name> <fix_branch_name>
    ```
+   This will automatically isolate your package code changes and open a PR upstream.
+
 4. **Dashboard** — after a batch of PRs is merged, regenerate the README and package fix reports:
    ```bash
    cd bioc-rescue-dashboard
