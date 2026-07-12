@@ -1,7 +1,7 @@
 # Bioconductor Package Rescue
 
 This is an effort to autofix or "rescue" Bioconductor packages that are failing
-build/check/test on the Bioconductor build system and are marked for deprecation. For some details see the [INSTRUCTIONS.md](INSTRUCTIONS.md).
+build/check/test on the Bioconductor build system and are marked for deprecation. For some details see the [INSTRUCTIONS.md](INSTRUCTIONS.md). To give feedback to or ask questions or offer help to the human behind this project, email levi.waldron at sph.cuny.edu.
 
 ---
 
