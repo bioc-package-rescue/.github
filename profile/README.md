@@ -21,9 +21,10 @@ Detailed reports and metrics are available in the dashboard repository:
 
 1. **Monitoring**: Currently has all packages listed on the Bioconductor Help Wanted page. Could be extended to monitor daily build status DBs.
 2. **Rescue Forks**: For packages that are failing checks or flagged for deprecation, we fork (if maintained on GitHub) or clone (if only on git.bioconductor.org) into the [bioc-package-rescue](https://github.com/bioc-package-rescue) organization.
-3. **GHA Testing**: We configure each fork to run a [centralized GitHub Actions workflow](https://github.com/bioc-package-rescue/workflows/blob/main/.github/workflows/check-bioc.yml) that builds/checks/tests against the **Bioconductor Devel** docker image. To save time/cost, we only test the default branch and only on Linux, which should be adequate to fix most of the types of issues that threaten deprecation.
-4. **Agentic Auto-Fixes**: A locally-running AI coding agents read GHA check logs, diagnoses the ERRORs, and applies fixes as a PR. WARNINGs and NOTEs are ignored.
-5. **Verification**: The agent waits for the GHA and the GitHub Copilot PR code review, and updates the PR based on information from both. This process iterates until there are no ERRORs in the GHA build/check, at which point the PR is marked ready for human review.
+3. **Sync with Bioconductor**: Before any change, each rescue repo is synced with the package's `devel` branch on git.bioconductor.org, which is never modified. Commits that exist only on GitHub are replayed on top of it in a linear history, without merge commits.
+4. **GHA Testing**: We configure each fork to run a [centralized GitHub Actions workflow](https://github.com/bioc-package-rescue/workflows/blob/main/.github/workflows/check-bioc.yml) that builds/checks/tests against the **Bioconductor Devel** docker image. To save time/cost, we only test the default branch and only on Linux, which should be adequate to fix most of the types of issues that threaten deprecation.
+5. **Agentic Auto-Fixes**: A locally-running AI coding agents read GHA check logs, diagnoses the ERRORs, and applies fixes as a PR. WARNINGs and NOTEs are ignored.
+6. **Verification**: The agent waits for the GHA and the GitHub Copilot PR code review, and updates the PR based on information from both. This process iterates until there are no ERRORs in the GHA build/check, at which point the PR is marked ready for human review.
 
 ---
 
@@ -32,5 +33,6 @@ Detailed reports and metrics are available in the dashboard repository:
 If you are the developer or maintainer:
 
 * **No Intrusive Changes**: We do not have write access to your original repository. All of our fixes are developed and verified entirely within our forks here.
+* **Built on Bioconductor devel**: Our fixes start from your package's current `devel` branch on git.bioconductor.org, so they apply to what Bioconductor builds even if your GitHub repository is behind it.
 * **Easy Upstream Integration**: Once we get a package's GHA checks to go fully green and a human has reviewed the PR, we will a) submit a PR to your upstream repo if it is on GitHub, or b) allow you to review the PR in this rescue repo before you push the changes to git.bioconductor.org.
 

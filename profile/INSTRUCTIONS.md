@@ -31,10 +31,12 @@ Edit `packages.csv` directly in the `bioc-rescue-dashboard` repository, add a ro
 
 ## Configuration
 
-Two scripts hard-code the local workspace root path. If running on a different machine, update `WORKSPACE_ROOT` near the top of these files (located in the `bioc-rescue-dashboard` repository):
+These scripts hard-code the local workspace root path. If running on a different machine, update `WORKSPACE_ROOT` near the top of these files (located in the `bioc-rescue-dashboard` repository):
 
 - `bioc-rescue-dashboard/scripts/clone_repos.py`
 - `bioc-rescue-dashboard/scripts/update_reusable_workflows.py`
+- `bioc-rescue-dashboard/scripts/submit_upstream.py`
+- `bioc-rescue-dashboard/scripts/sync_repos.py` (or pass `--workspace DIR`)
 
 Default: `/Users/Levi/git/bioc-package-rescue`
 
@@ -57,15 +59,20 @@ python scripts/rescue_repos.py
 # 3. Clone rescue repos locally
 python scripts/clone_repos.py
 
-# 4. Apply centralized GHA workflow to all local checkouts
+# 4. Sync each rescue repo with git.bioconductor.org devel
+#    (dry run first, then push)
+python scripts/sync_repos.py
+python scripts/sync_repos.py --push
+
+# 5. Apply centralized GHA workflow to all local checkouts
 python scripts/update_reusable_workflows.py
 
-# 5. Regenerate the README.md dashboard
+# 6. Regenerate the README.md dashboard
 python scripts/update_deprecated_packages.py
 git add README.md && git commit -m "Update dashboard"
 ```
 
-Steps 2–5 are idempotent — already-existing repos, clones, and workflows are skipped automatically.
+Steps 2–6 are idempotent — already-existing repos, clones, synced branches, and workflows are skipped automatically.
 
 ---
 
@@ -92,6 +99,16 @@ Requires the `gh` CLI authenticated to an account with organization-level reposi
 
 Clones each rescue repo (ERROR/TIMEOUT packages only) from `git@github.com:bioc-package-rescue/<pkg>` into the local workspace. Already-existing local directories are skipped.
 
+### `scripts/sync_repos.py` — Sync rescue repos with Bioconductor
+
+Rebuilds each rescue repo's default branch on top of the package's `devel` branch on `git.bioconductor.org`. See [Sync Before Fixing](#sync-before-fixing) for the policy.
+Usage: `python scripts/sync_repos.py [--push] [--workspace DIR] [PKG ...]`
+- Adds a `bioc` remote (`https://git.bioconductor.org/packages/<pkg>`) and fetches `devel`.
+- Replays the commits on the rescue default branch that are not on `bioc/devel`, oldest first, with `git cherry-pick`. Merge commits and commits whose patch is already on `bioc/devel` are dropped, so the result is linear.
+- Without `--push`, leaves the result on a local `bioc-sync` branch for review; the default branch and the GitHub repo are not touched.
+- With `--push`, saves the old tip as `pre-sync/<YYYYMMDD>`, force-pushes the default branch with `--force-with-lease`, and turns off merge commits for the repo's PRs (rebase and squash merging stay on).
+- Repos that are already synced are skipped; repos that are only behind are fast-forwarded. If a replayed commit conflicts, the checkout is restored and the package is reported for a manual sync.
+
 ### `scripts/update_reusable_workflows.py` — Push GHA workflow stubs
 
 Writes the minimal caller stub (see below) to `.github/workflows/check-bioc.yml` in every local checkout with ERROR/TIMEOUT status, commits with `Antigravity <gemini@google.com>` as author, and pushes. Already-up-to-date repos are skipped. The commit author is hardcoded; update the script if using a different agent.
@@ -105,8 +122,10 @@ Reads `packages.csv`, fetches the current Bioconductor build status and most rec
 Automates creating a Pull Request back to the original upstream repository.
 Usage: `python scripts/submit_upstream.py <package_name> <fix_branch_name>`
 - Resolves the upstream parent of the rescue fork.
-- Adds the upstream remote and fetches the default branch.
-- Creates a clean integration branch excluding rescue-specific configurations (like `.github/workflows/check-bioc.yml` or `.Rbuildignore` additions unless substantive).
+- Adds the upstream remote and fetches the default branch, and adds the `bioc` remote and fetches `devel`.
+- Requires the fix branch to contain `bioc/devel` (run `sync_repos.py` first).
+- Takes only the rescue changes, the diff between `bioc/devel` and the fix branch, so commits that came from `git.bioconductor.org` are never proposed as fixes.
+- Applies that diff to a clean integration branch off the upstream default branch, excluding rescue-specific configurations (like `.github/workflows/check-bioc.yml` or `.Rbuildignore` additions unless substantive).
 - Pushes the branch and opens a GitHub Pull Request to the original maintainers.
 
 ### `scripts/generate_report.py` — Generate fix statistics
@@ -125,7 +144,7 @@ Generates comprehensive reports of the fixes applied during the rescue process.
 - **URL**: `https://github.com/bioc-package-rescue/workflows`
 - **File**: `.github/workflows/check-bioc.yml`
 
-This holds the full workflow definition. The checks are run only against the **Bioconductor Devel** Docker image (`bioconductor/bioconductor_docker:devel`). To update or change the check parameters, modify this workflow file, commit, and push to `main`. All package repositories pick up the change on their next run — no per-repo edits needed.
+This holds the full workflow definition. The checks are run only against the **Bioconductor Devel** Docker image (`bioconductor/bioconductor_docker:devel`). A separate `bioc-sync` job fails when the branch does not contain the package's `devel` branch on `git.bioconductor.org`, or has merge commits on top of it (see [Sync Before Fixing](#sync-before-fixing)). To update or change the check parameters, modify this workflow file, commit, and push to `main`. All package repositories pick up the change on their next run — no per-repo edits needed.
 
 ### Package-level caller stub
 
@@ -154,6 +173,33 @@ Run `update_reusable_workflows.py` to batch-apply or refresh this stub across al
 
 ---
 
+## Sync Before Fixing
+
+Every change to a rescue repo starts from the package's current `devel` branch on `git.bioconductor.org`. That branch is the reference: it is what the Bioconductor build system checks, and the rescue process never rewrites it. GitHub upstreams often lag behind it (for example, when the version bumps from Bioconductor release branching were never pulled back to GitHub), so a fork of the GitHub repo is not a valid base for fixes.
+
+Before any rescue change, and again whenever Bioconductor devel moves:
+
+1. **Sync** the rescue default branch with `python scripts/sync_repos.py <pkg>`, review the replayed commits it prints and the `bioc-sync` branch it leaves, then run it again with `--push`.
+2. **Then fix**: branch from the synced default branch and follow the fix loop below.
+
+The synced history is linear:
+
+```
+bioc/devel (git.bioconductor.org, unchanged)
+└─ commits from the GitHub upstream that are not on Bioconductor, replayed
+   └─ rescue commits (centralized GHA stub, fixes)
+```
+
+Rules:
+
+- **Bioconductor devel is never changed** by the rescue process, and nothing is pushed to `git.bioconductor.org`. Maintainers push accepted fixes there themselves.
+- **No merge commits** above `bioc/devel`. Merge rescue PRs with **Rebase and merge** or **Squash and merge**; `sync_repos.py --push` turns off merge commits for each repo it syncs.
+- **Rebase, don't merge**, to update a fix branch after the default branch is synced again: `git rebase origin/<default-branch>`.
+- **Force-pushes are only for syncing**, are done with `--force-with-lease`, and keep the old tip as `pre-sync/<YYYYMMDD>`. Open PRs in the rescue repo must be rebased onto the synced default branch afterwards.
+- **The GitHub upstream is not rewritten.** If it is behind `git.bioconductor.org`, say so in the upstream PR; syncing it is up to its maintainer, since a PR can add commits but cannot rewrite the upstream history.
+
+The `bioc-sync` job in the centralized workflow enforces the first two rules on every push and PR.
+
 ## Fixing Packages ("Go Until Green")
 
 Once rescue repos exist and the GHA workflow is running, the goal is to make each
@@ -162,6 +208,9 @@ informational and can be ignored.
 
 ### Ground Rules
 
+- **Sync first** — the default branch must contain `git.bioconductor.org` devel
+  with no merge commits above it before any fix is made (see
+  [Sync Before Fixing](#sync-before-fixing)).
 - **One package at a time** — complete the full fix loop for one package before
   starting the next.
 - **Always open a PR** — never push fixes directly to the default branch. PRs allow GitHub Copilot review before merging.
@@ -194,14 +243,19 @@ informational and can be ignored.
 ### Single-Package Fix Loop
 
 ```
+0. Sync with Bioconductor devel (skip if already in sync)
+   python scripts/sync_repos.py <PKG>          # review the bioc-sync branch
+   python scripts/sync_repos.py <PKG> --push
+
 1. Fetch latest GHA logs
    env GITHUB_TOKEN="" gh run list --workflow=check-bioc.yml --repo bioc-package-rescue/<PKG>
    env GITHUB_TOKEN="" gh run view <RUN_ID> --repo bioc-package-rescue/<PKG> --log-failed
 
 2. Parse all ERRORs; ignore WARNINGs and NOTEs
 
-3. Create a fix branch
-   git -C <PKG> checkout -b fix/<short-description>
+3. Create a fix branch from the synced default branch
+   git -C <PKG> fetch origin
+   git -C <PKG> checkout -b fix/<short-description> origin/<default-branch>
 
 4. Apply fix(es) to source files
 
@@ -218,7 +272,8 @@ informational and can be ignored.
 7b. Still failing → return to step 1 and iterate
 
 8. Monitor and address feedback — wait for and address feedback from GitHub Copilot reviews on the pull request. Push any necessary fixes
-to the branch until the PR is approved and merged.
+to the branch until the PR is approved, then merge it with "Rebase and merge"
+or "Squash and merge" (never a merge commit).
 ```
 
 ### Common Error Classes
